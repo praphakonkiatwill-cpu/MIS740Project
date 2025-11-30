@@ -1,0 +1,6 @@
+AssignmentID,WeekEndingSunday,EmployeeID,DayOfWeek,EventName,StartTime,EndTime,Notes
+A0001,2025-11-30,E001,Monday,Front Desk AM,09:00,13:00,
+A0002,2025-11-30,E001,Wednesday,Front Desk AM,09:00,13:00,
+A0003,2025-11-30,E002,Monday,Front Desk PM,13:00,17:00,
+A0004,2025-11-30,E003,Monday,Chiro Appointments,10:00,18:00,
+A0005,2025-11-30,E003,Tuesday,Chiro Appointments,10:00,18:00,

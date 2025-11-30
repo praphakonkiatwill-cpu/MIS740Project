@@ -1,0 +1,4 @@
+ID,FirstName,LastName,Role,Department,IsActive,Email,Phone,Notes
+E001,Alice,Nguyen,Front Desk,Admin,1,alice@example.com,555-111-2222,"Part-time, mornings"
+E002,Bob,Lopez,Trainer,Fitness,1,bob@example.com,555-333-4444,"Prefers evenings"
+E003,Carla,Smith,Chiropractor,Clinical,1,carla@example.com,555-555-6666,"Lead doctor"
