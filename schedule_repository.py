@@ -102,7 +102,7 @@ def _write_assignments_df(df: pd.DataFrame, path: str | os.PathLike = "weekly_as
     _ensure_parent_dir(path)
 
     temp_path = path.with_suffix(path.suffix + ".tmp")
-    df.to_csv(temp_path, index=False, line_terminator="\n")
+    df.to_csv(temp_path, index=False, lineterminator="\n")
     temp_path.replace(path)
 
 # generate new assignment id
@@ -300,7 +300,7 @@ def save_weekly_schedule_csv(
     output_path = Path(output_dir) / filename
 
     _ensure_parent_dir(output_path)
-    schedule_df.to_csv(output_path, line_terminator="\n")
+    schedule_df.to_csv(output_path, lineterminator="\n")
 
     return output_path
 
