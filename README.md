@@ -3,7 +3,7 @@ test
 - kept path validation in main()
 - adapted events_to_days() for availability entry
 - reused employee_to_event() logic in create_schedule()
-- your validation loops are solid, used them for inputs
+- validation loops are solid, used them for inputs
 
 **added CRUD stuff:**
 - worker_management(): add/update/delete workers via pandas on employee.csv
