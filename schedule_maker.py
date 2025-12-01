@@ -50,7 +50,7 @@ def add_worker():
         date = input("Enter available date (YYYY-MM-DD) or blank to finish: ").strip()
         if not date:
             break
-        times = input("Enter available times (e.g. 08:00-16:00, 18:00-22:00): ").strip()
+        times = input("Enter available times (e.g. 08:00-16:00, 18:00-22:00, etc. Enter 00:00-00:00 for open schedule.): ").strip()
         availability[date] = [t.strip() for t in times.split(",") if t.strip()]
 
     worker = {
@@ -181,9 +181,7 @@ def view_schedule():
 
 
 # Data Visualization Module
-# This module provides reporting and analytics capabilities to support strategic decision-making by generating visual insights into staffing metrics. Key performance indicators (KPIs) include staff distribution by role, availability trends over time, and shift fairness across workers. These visualizations help managers identify coverage gaps, forecast staffing needs, and ensure equitable workloads, ultimately improving operational efficiency and employee satisfaction.
 
-# Visual reports are generated using dedicated functions that leverage pandas for data aggregation and matplotlib for creating intuitive charts such as bar graphs and heatmaps. Data is loaded from centralized JSON or CSV files, processed with counters and accumulators to calculate totals and distributions, and presented in clear, graphical formats that highlight key insights. This addresses the lack of reporting in manual systems by enabling data-driven adjustments for future events.
 import matplotlib.pyplot as plt
 import pandas as pd
 from collections import Counter
@@ -191,9 +189,7 @@ import os
 
 
 # Load Data for Charts
-# The system must load worker data from persistent storage to enable analysis without redundant data entry. This centralized approach eliminates disorganized information by reading from JSON or CSV files, ensuring all visualizations are based on up-to-date records.
 
-# This can be implemented using pandas to convert file data into DataFrames or lists of dictionaries for efficient querying. Conditional logic determines the file format, and the function returns structured data ready for aggregation, reducing the risk of errors in downstream visualizations.
 def load_workers_for_analysis():
     filename = "workers.json" if os.path.exists("workers.json") else "workers.csv"
     if filename.endswith(".json"):
@@ -205,9 +201,6 @@ def load_workers_for_analysis():
 
 
 # Chart 1 – Roles Distribution
-# To monitor role coverage and identify potential shortages, the system should visualize the distribution of qualified workers across roles. This KPI helps managers forecast staffing needs and address recurring challenges in critical positions like security or concessions.
-
-# This can be implemented by flattening role lists from worker profiles using loops, then applying counters to tally frequencies. The results are aggregated into a pandas-compatible structure and visualized as a bar chart with matplotlib, providing a clear format for quick insights into workforce composition.
 def plot_role_distribution():
     workers = load_workers_for_analysis()
     all_roles = []
@@ -230,10 +223,9 @@ def plot_role_distribution():
     plt.show()
 
 
-# Chart 2 – Availability Heatmap (Next 7 Days)
-# The system needs to track and visualize worker availability trends over upcoming days to prevent coverage gaps and operational breakdowns. This allows managers to proactively address shortages in advance, improving event reliability.
+# Chart 2 – Availability Heatmap next 7 dys
 
-# Availability data is stored as nested dictionaries within worker profiles. Using loops and conditional checks, the system aggregates daily counts into a structure suitable for visualization. Matplotlib generates a bar-based heatmap, with accumulators tallying available workers per day for a data-driven view of short-term staffing forecasts.
+# availability data is stored as nested dictionaries within worker profiles. Using loops and conditional checks, the system aggregates daily counts into a structure suitable for visualization. Matplotlib generates a bar-based heatmap, with accumulators tallying available workers per day for a data-driven view of short-term staffing forecasts.
 def plot_availability_heatmap():
     workers = load_workers_for_analysis()
     from datetime import datetime, timedelta
@@ -263,9 +255,7 @@ def plot_availability_heatmap():
 
 
 # Chart 3 – Shifts per Worker (Fairness Check)
-# To promote shift fairness and monitor employee morale, the system should analyze and visualize assigned shifts per worker. This identifies imbalances, such as over-assignment, which can lead to lower satisfaction and higher turnover.
-
-# Schedule data is loaded from a JSON file and processed using counters to tally shifts per worker. Aggregations calculate averages, and conditional logic highlights outliers. Matplotlib renders a bar chart for easy comparison, empowering managers to make equitable adjustments based on reliable data.
+# schedule data is loaded from a JSON file and processed using counters to tally shifts per worker. Aggregations calculate averages, and conditional logic highlights outliers. Matplotlib renders a bar chart for easy comparison, empowering managers to make equitable adjustments based on reliable data.
 def plot_shifts_per_worker():
     schedule_file = "schedule.json"
     if not os.path.exists(schedule_file):
@@ -304,9 +294,7 @@ def plot_shifts_per_worker():
 
 
 # Master Analytics Menu
-# Users should access analytics through a centralized menu for generating reports and visualizations on demand. This streamlines the process, eliminating manual calculations and ensuring timely insights.
 
-# Implemented with a while loop for input handling and conditional statements to route to specific chart functions. This encapsulates the logic, reducing miscommunication and allowing managers to focus on data-driven decisions.
 def analytics_menu():
     while True:
         print("\n" + "=" * 40)
@@ -373,6 +361,6 @@ def main_menu():
             print("Invalid option.")
 
 
-# RUN PROGRAM
+# run
 if __name__ == "__main__":
     main_menu()
