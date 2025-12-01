@@ -8,8 +8,14 @@ from typing import Iterable, Optional
 
 import pandas as pd
 
+RED = "\033[91m"
+GREEN = "\033[92m"
+YELLOW = "\033[93m"
+RESET = "\033[0m"
+
 # list of days
 DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+
 
 # define assignment class
 @dataclass(frozen=True)
@@ -23,26 +29,34 @@ class Assignment:
     end_time: Optional[str] = None
     notes: Optional[str] = None
 
+
 # parse week ending date
 def _parse_week_ending(week_ending: str | date) -> date:
     if isinstance(week_ending, date):
         return week_ending
 
+    s = str(week_ending).strip().lower()
+
+    if s in {"", "today"}:
+        return date.today()
+
     for fmt in ("%Y-%m-%d", "%m/%d/%Y", "%m-%d-%Y"):
         try:
-            return datetime.strptime(week_ending, fmt).date()
+            return datetime.strptime(s, fmt).date()
         except ValueError:
             continue
 
     raise ValueError(
         f"Could not parse week_ending '{week_ending}'. "
-        "Use 'YYYY-MM-DD' or 'MM/DD/YYYY'."
+        "Use 'YYYY-MM-DD' or 'MM/DD/YYYY', or type 'today'."
     )
+
 
 # create parent dir if missing
 def _ensure_parent_dir(path: Path) -> None:
     if path.parent and not path.parent.exists():
         path.parent.mkdir(parents=True, exist_ok=True)
+
 
 # load employee data from csv
 def load_employee_df(path: str | os.PathLike = "employee.csv") -> pd.DataFrame:
@@ -59,6 +73,7 @@ def load_employee_df(path: str | os.PathLike = "employee.csv") -> pd.DataFrame:
     df.index = df.index.astype(str)
     return df
 
+
 # list assignment columns
 ASSIGNMENT_COLUMNS = [
     "AssignmentID",
@@ -71,10 +86,11 @@ ASSIGNMENT_COLUMNS = [
     "Notes",
 ]
 
+
 # load assignments from csv
 def load_assignments_df(
-    path: str | os.PathLike = "weekly_assignments.csv",
-    create_if_missing: bool = True,
+        path: str | os.PathLike = "weekly_assignments.csv",
+        create_if_missing: bool = True,
 ) -> pd.DataFrame:
     path = Path(path)
 
@@ -96,6 +112,7 @@ def load_assignments_df(
 
     return df[ASSIGNMENT_COLUMNS]
 
+
 # write assignments to csv
 def _write_assignments_df(df: pd.DataFrame, path: str | os.PathLike = "weekly_assignments.csv") -> None:
     path = Path(path)
@@ -104,6 +121,7 @@ def _write_assignments_df(df: pd.DataFrame, path: str | os.PathLike = "weekly_as
     temp_path = path.with_suffix(path.suffix + ".tmp")
     df.to_csv(temp_path, index=False, lineterminator="\n")
     temp_path.replace(path)
+
 
 # generate new assignment id
 def _generate_new_assignment_id(existing_ids: Iterable[str]) -> str:
@@ -122,16 +140,17 @@ def _generate_new_assignment_id(existing_ids: Iterable[str]) -> str:
     new_num = max_num + 1
     return f"A{new_num:04d}"
 
+
 # create new assignment
 def create_assignment(
-    week_ending: str | date,
-    employee_id: str,
-    day_of_week: str,
-    event_name: str,
-    start_time: Optional[str] = None,
-    end_time: Optional[str] = None,
-    notes: Optional[str] = None,
-    assignments_csv: str | os.PathLike = "weekly_assignments.csv",
+        week_ending: str | date,
+        employee_id: str,
+        day_of_week: str,
+        event_name: str,
+        start_time: Optional[str] = None,
+        end_time: Optional[str] = None,
+        notes: Optional[str] = None,
+        assignments_csv: str | os.PathLike = "weekly_assignments.csv",
 ) -> Assignment:
     week_date = _parse_week_ending(week_ending)
     day_of_week = str(day_of_week).strip()
@@ -167,36 +186,39 @@ def create_assignment(
         notes=(notes or "").strip() or None,
     )
 
+
 # list assignments for week
 def list_assignments_for_week(
-    week_ending: str | date,
-    assignments_csv: str | os.PathLike = "weekly_assignments.csv",
+        week_ending: str | date,
+        assignments_csv: str | os.PathLike = "weekly_assignments.csv",
 ) -> pd.DataFrame:
     week_date = _parse_week_ending(week_ending)
     df = load_assignments_df(assignments_csv, create_if_missing=True)
     return df[df["WeekEndingSunday"] == week_date].copy()
 
+
 # list assignments for employee in week
 def list_assignments_for_employee_week(
-    week_ending: str | date,
-    employee_id: str,
-    assignments_csv: str | os.PathLike = "weekly_assignments.csv",
+        week_ending: str | date,
+        employee_id: str,
+        assignments_csv: str | os.PathLike = "weekly_assignments.csv",
 ) -> pd.DataFrame:
     week_date = _parse_week_ending(week_ending)
     df = load_assignments_df(assignments_csv, create_if_missing=True)
     mask = (df["WeekEndingSunday"] == week_date) & (df["EmployeeID"] == str(employee_id))
     return df[mask].copy()
 
+
 # update existing assignment
 def update_assignment(
-    assignment_id: str,
-    *,
-    event_name: Optional[str] = None,
-    start_time: Optional[str] = None,
-    end_time: Optional[str] = None,
-    notes: Optional[str] = None,
-    day_of_week: Optional[str] = None,
-    assignments_csv: str | os.PathLike = "weekly_assignments.csv",
+        assignment_id: str,
+        *,
+        event_name: Optional[str] = None,
+        start_time: Optional[str] = None,
+        end_time: Optional[str] = None,
+        notes: Optional[str] = None,
+        day_of_week: Optional[str] = None,
+        assignments_csv: str | os.PathLike = "weekly_assignments.csv",
 ) -> None:
     df = load_assignments_df(assignments_csv, create_if_missing=True)
 
@@ -224,10 +246,11 @@ def update_assignment(
 
     _write_assignments_df(df, assignments_csv)
 
+
 # delete assignment by id
 def delete_assignment(
-    assignment_id: str,
-    assignments_csv: str | os.PathLike = "weekly_assignments.csv",
+        assignment_id: str,
+        assignments_csv: str | os.PathLike = "weekly_assignments.csv",
 ) -> None:
     df = load_assignments_df(assignments_csv, create_if_missing=True)
 
@@ -238,11 +261,12 @@ def delete_assignment(
     df = df[mask]
     _write_assignments_df(df, assignments_csv)
 
+
 # build weekly schedule df
 def build_weekly_schedule_from_assignments(
-    week_ending: str | date,
-    employee_df: pd.DataFrame,
-    assignments_df: pd.DataFrame,
+        week_ending: str | date,
+        employee_df: pd.DataFrame,
+        assignments_df: pd.DataFrame,
 ) -> pd.DataFrame:
     week_date = _parse_week_ending(week_ending)
 
@@ -284,11 +308,12 @@ def build_weekly_schedule_from_assignments(
 
     return schedule_df
 
+
 # save schedule to csv
 def save_weekly_schedule_csv(
-    schedule_df: pd.DataFrame,
-    week_ending: str | date,
-    output_dir: str | os.PathLike = ".",
+        schedule_df: pd.DataFrame,
+        week_ending: str | date,
+        output_dir: str | os.PathLike = ".",
 ) -> Path:
     week_date = _parse_week_ending(week_ending)
 
@@ -304,17 +329,19 @@ def save_weekly_schedule_csv(
 
     return output_path
 
+
 # build and save schedule
 def build_and_save_weekly_schedule(
-    week_ending: str | date,
-    employee_csv: str | os.PathLike = "employee.csv",
-    assignments_csv: str | os.PathLike = "weekly_assignments.csv",
-    output_dir: str | os.PathLike = ".",
+        week_ending: str | date,
+        employee_csv: str | os.PathLike = "employee.csv",
+        assignments_csv: str | os.PathLike = "weekly_assignments.csv",
+        output_dir: str | os.PathLike = ".",
 ) -> Path:
     employees = load_employee_df(employee_csv)
     assignments = load_assignments_df(assignments_csv, create_if_missing=True)
     schedule_df = build_weekly_schedule_from_assignments(week_ending, employees, assignments)
     return save_weekly_schedule_csv(schedule_df, week_ending, output_dir=output_dir)
+
 
 # main for testing
 if __name__ == "__main__":
@@ -325,6 +352,6 @@ if __name__ == "__main__":
 
     try:
         path = build_and_save_weekly_schedule(week_str)
-        print(f"\n✓ Schedule exported to: {path.resolve()}")
+        print(f"\n{GREEN}✓ Schedule exported to: {path.resolve()}{RESET}")
     except Exception as exc:
-        print(f"\n✗ Error: {exc}")
+        print(f"\n{RED}✗ Error: {exc}{RESET}")
