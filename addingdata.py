@@ -1,55 +1,55 @@
-import csv
 import random
 from datetime import datetime, timedelta
+import json
 
-# Define lists of sample data
-names = ["John Doe", "Jane Smith", "Michael Johnson", "Emily Brown", "David Lee", "Sarah Thompson", "Christopher Davis",
-         "Olivia Wilson", "Daniel Taylor", "Sophia Anderson"]
+# Define lists of names, roles, and phone number prefixes
+first_names = ["John", "Jane", "Bob", "Alice", "Tom", "Sarah", "Michael", "Emily", "David", "Ashley"]
+last_names = ["Doe", "Smith", "Johnson", "Williams", "Brown", "Davis", "Wilson", "Anderson", "Taylor", "Martinez"]
 roles = ["Security", "Usher", "Concessions", "Ticket Sales", "Event Coordinator"]
-phone_prefixes = ["702", "206", "808", "312", "626",]
-email_domains = ["unlv.com", "company.org", "service.net", "enterprise.co"]
+phone_prefixes = ["702", "206", "808", "312", "626"]
 
-# Generate 50 employees
-num_employees = 50
-employees = []
+# Define function to generate worker data
+def generate_worker_data(num_workers):
+    workers = []
+    for _ in range(num_workers):
+        first_name = random.choice(first_names)
+        last_name = random.choice(last_names)
+        name = f"{first_name} {last_name}"
+        phone_prefix = random.choice(phone_prefixes)
+        phone_number = f"{phone_prefix}-{random.randint(100, 999)}-{random.randint(1000, 9999)}"
+        contact = f"{phone_number}"
+        worker_roles = random.sample(roles, random.randint(1, 3))
+        availability = generate_availability()
+        worker = {
+            "name": name,
+            "contact": contact,
+            "roles": worker_roles,
+            "availability": availability
+        }
+        workers.append(worker)
+    return workers
 
-for i in range(num_employees):
-    name = random.choice(names)
-    role_count = random.randint(1, 3)
-    worker_roles = random.sample(roles, role_count)
-    phone = f"{random.choice(phone_prefixes)}-{random.randint(100, 999)}-{random.randint(1000, 9999)}"
-    email = f"{name.lower().replace(' ', '.')}@{random.choice(email_domains)}"
-
-    # Generate availability
+# Define function to generate availability data
+def generate_availability():
     availability = {}
-    start_date = datetime.now().date() - timedelta(days=random.randint(0, 30))
-    end_date = start_date + timedelta(days=random.randint(30, 90))
+    start_date = datetime.now().date()
+    end_date = start_date + timedelta(days=7)
     current_date = start_date
     while current_date <= end_date:
-        if random.random() < 0.7:  # 70% chance of being available on a given day
-            start_time = f"{random.randint(8, 20)}:{random.choice(['00', '15', '30', '45'])}"
-            end_time = f"{random.randint(12, 22)}:{random.choice(['00', '15', '30', '45'])}"
-            availability[current_date.strftime("%Y-%m-%d")] = [f"{start_time}-{end_time}"]
+        available_times = []
+        if random.random() < 0.8:  # 80% chance of being available
+            start_hour = random.randint(8, 17)
+            end_hour = random.randint(start_hour + 2, 20)
+            available_times.append(f"{start_hour:02d}:00-{end_hour:02d}:00")
+        availability[str(current_date)] = available_times
         current_date += timedelta(days=1)
+    return availability
 
-    employee = {
-        "ID": f"E{i + 1}",
-        "name": name,
-        "phone": phone,
-        "email": email,
-        "roles": ",".join(worker_roles),
-        "total_shifts": random.randint(0, 50),
-        "availability": str(availability)
-    }
-    employees.append(employee)
+# Generate and save mock data
+num_workers = 50
+workers = generate_worker_data(num_workers)
 
-# Write the data to a CSV file
-with open("employee.csv", "w", newline="") as csvfile:
-    fieldnames = ["ID", "name", "phone", "email", "roles", "total_shifts", "availability"]
-    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+with open("workers.json", "w") as f:
+    json.dump(workers, f, indent=4)
 
-    writer.writeheader()
-    for employee in employees:
-        writer.writerow(employee)
-
-print("CSV file 'employee_data.csv' generated successfully.")
+print(f"Generated {num_workers} workers and saved to workers.json.")
