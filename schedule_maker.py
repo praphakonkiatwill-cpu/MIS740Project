@@ -1,113 +1,129 @@
 # IMPORT MODULES
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
+import random
+import matplotlib.pyplot as plt
+import pandas as pd
+from collections import Counter
 
 # GLOBAL DATA
 workers = []
 schedule = {}
 DATA_FILE = "workers.json"
 SCHEDULE_FILE = "schedule.json"
-
+MANAGER_PASSWORD = "UNLV"
 
 # LOAD WORKERS
 def load_workers():
     global workers
     if os.path.exists(DATA_FILE):
-        with open(DATA_FILE, "r") as f:
-            workers = json.load(f)
-
+        try:
+            with open(DATA_FILE, "r") as f:
+                workers = json.load(f)
+        except json.JSONDecodeError:
+            # Handle the case where the file is empty or invalid
+            workers = []
+    else:
+        # Handle the case where the file doesn't exist
+        workers = []
 
 # SAVE WORKERS
 def save_workers():
     with open(DATA_FILE, "w") as f:
         json.dump(workers, f, indent=4)
 
-
 # LOAD SCHEDULE
 def load_schedule():
     global schedule
     if os.path.exists(SCHEDULE_FILE):
-        with open(SCHEDULE_FILE, "r") as f:
-            schedule = json.load(f)
-
+        try:
+            with open(SCHEDULE_FILE, "r") as f:
+                schedule = json.load(f)
+        except json.JSONDecodeError:
+            # Handle the case where the file is empty or invalid
+            schedule = {}
+    else:
+        # Handle the case where the file doesn't exist
+        schedule = {}
 
 # SAVE SCHEDULE
 def save_schedule():
     with open(SCHEDULE_FILE, "w") as f:
         json.dump(schedule, f, indent=4)
 
-
 # ADD WORKER
 def add_worker():
-    name = input("Enter name: ").strip()
-    contact = input("Enter contact (phone/email): ").strip()
-    roles = input("Enter roles (comma-separated): ").strip().split(",")
-    roles = [r.strip() for r in roles if r.strip()]
-
-    availability = {}
-    while True:
-        date = input("Enter available date (YYYY-MM-DD) or blank to finish: ").strip()
-        if not date:
-            break
-        times = input("Enter available times (e.g. 08:00-16:00, 18:00-22:00, etc. Enter 00:00-00:00 for open schedule.): ").strip()
-        availability[date] = [t.strip() for t in times.split(",") if t.strip()]
-
     worker = {
-        "name": name,
-        "contact": contact,
-        "roles": roles,
-        "availability": availability
+        "name": input("Enter name: ").strip(),
+        "contact": f"{random.choice(['***', '***', '***', '***', '***'])}-{random.randint(1000, 9999)}",
+        "roles": [r.strip() for r in input("Enter roles (comma-separated): ").strip().split(",") if r.strip()],
+        "availability": generate_availability()
     }
     workers.append(worker)
     save_workers()
     print("Worker added successfully.")
 
-
 # UPDATE WORKER
 def update_worker():
+    password = input("Enter manager password: ")
+    if password != MANAGER_PASSWORD:
+        print("Incorrect password. Access denied.")
+        return
+
     view_workers()
-    idx = int(input("Enter worker number to update: ")) - 1
-    if 0 <= idx < len(workers):
-        worker = workers[idx]
-        print("Leave blank to keep current value.")
-        name = input(f"Name [{worker['name']}]: ").strip()
-        contact = input(f"Contact [{worker['contact']}]: ").strip()
-        roles_input = input(f"Roles [{', '.join(worker['roles'])}]: ").strip()
+    idx = input("Enter worker number to update: ").strip()
+    if idx:
+        try:
+            idx = int(idx) - 1
+            if 0 <= idx < len(workers):
+                worker = workers[idx]
+                print("Leave blank to keep current value.")
+                worker["name"] = input(f"Name [{worker['name']}]: ").strip() or worker["name"]
+                worker["contact"] = f"{random.choice(['***', '***', '***', '***', '***'])}-{random.randint(1000, 9999)}"
+                roles_input = input(f"Roles [{', '.join(worker['roles'])}]: ").strip()
+                if roles_input:
+                    worker["roles"] = [r.strip() for r in roles_input.split(",") if r.strip()]
 
-        if name:
-            worker["name"] = name
-        if contact:
-            worker["contact"] = contact
-        if roles_input:
-            worker["roles"] = [r.strip() for r in roles_input.split(",") if r.strip()]
-
-        save_workers()
-        print("Worker updated.")
+                save_workers()
+                print("Worker updated.")
+            else:
+                print("Invalid number.")
+        except ValueError:
+            print("Invalid input. Please enter a number.")
     else:
-        print("Invalid number.")
-
+        print("No worker selected.")
 
 # DELETE WORKER
 def delete_worker():
-    view_workers()
-    idx = int(input("Enter worker number to delete: ")) - 1
-    if 0 <= idx < len(workers):
-        removed = workers.pop(idx)
-        save_workers()
-        print(f"Deleted: {removed['name']}")
-    else:
-        print("Invalid number.")
+    password = input("Enter manager password: ")
+    if password != MANAGER_PASSWORD:
+        print("Incorrect password. Access denied.")
+        return
 
+    view_workers()
+    idx = input("Enter worker number to delete: ").strip()
+    if idx:
+        try:
+            idx = int(idx) - 1
+            if 0 <= idx < len(workers):
+                removed = workers.pop(idx)
+                save_workers()
+                print(f"Deleted: {removed['name']}")
+            else:
+                print("Invalid number.")
+        except ValueError:
+            print("Invalid input. Please enter a number.")
+    else:
+        print("No worker selected.")
 
 # VIEW WORKERS
 def view_workers():
     if not workers:
         print("No workers found.")
         return
-    for i, w in enumerate(workers, 1):
-        print(f"{i}. {w['name']} | {w['contact']} | Roles: {', '.join(w['roles'])}")
-
+    for i, worker in enumerate(workers, 1):
+        print(f"{i}. {worker['name']} | {worker['contact']} | Roles: {', '.join(worker['roles'])}")
 
 # VIEW AVAILABILITY
 def view_availability():
@@ -121,14 +137,13 @@ def view_availability():
         times = ", ".join(w["availability"][date])
         print(f"  - {w['name']} ({', '.join(w['roles'])}) → {times}")
 
-
 # CREATE SCHEDULE
 def create_schedule():
-    global schedule
+    global schedule, roles_needed
     schedule.clear()
+    roles_needed = {}
 
     event_date = input("Event date (YYYY-MM-DD): ").strip()
-    roles_needed = {}
     while True:
         role = input("Role needed (or blank to finish): ").strip()
         if not role:
@@ -138,32 +153,37 @@ def create_schedule():
 
     assigned = {}
     for role, needed in roles_needed.items():
-        qualified = [w for w in workers if role in w["roles"] and event_date in w["availability"]]
-        assigned[role] = []
+        qualified = []
+        for worker in workers:
+            if role in worker["roles"] and event_date in worker["availability"]:
+                qualified.append({"name": worker["name"], "contact": worker["contact"], "availability": worker["availability"][event_date]})
 
         for _ in range(needed):
             if not qualified:
                 print(f"Not enough {role}s available!")
                 break
             print(f"\nAvailable for {role}:")
-            for i, w in enumerate(qualified):
-                times = ", ".join(w["availability"][event_date])
-                print(f"{i + 1}. {w['name']} → {times}")
+            for i, w in enumerate(qualified, 1):
+                print(f"{i}. {w['name']} → {', '.join(w['availability'])}")
 
-            choice = int(input("Select worker number: ")) - 1
-            if 0 <= choice < len(qualified):
-                selected = qualified.pop(choice)
-                assigned[role].append({"name": selected["name"], "contact": selected["contact"]})
-            else:
-                print("Invalid choice.")
+            choice = input("Select worker number: ").strip()
+            if choice:
+                try:
+                    choice = int(choice) - 1
+                    if 0 <= choice < len(qualified):
+                        selected = qualified.pop(choice)
+                        assigned[role] = assigned.get(role, []) + [{"name": selected["name"], "contact": selected["contact"]}]
+                    else:
+                        print("Invalid choice.")
+                except ValueError:
+                    print("Invalid input. Please enter a number.")
 
     schedule[event_date] = assigned
     save_schedule()
     print("Schedule created and saved.")
 
-
 # VIEW SCHEDULE
-def view_schedule():
+def view_schedule(roles_needed):
     load_schedule()
     if not schedule:
         print("No schedule found.")
@@ -175,21 +195,78 @@ def view_schedule():
         for role, staff in roles.items():
             print(f"{role.upper()}:")
             for person in staff:
-                print(f"   • {person['name']} ({person['contact']})")
+                # Find the worker's availability for the scheduled date
+                worker = next((w for w in workers if w['name'] == person['name']), None)
+                if worker and date in worker['availability']:
+                    availability_times = ', '.join(worker['availability'][date])
+                    print(f"   • {person['name']} ({person['contact']}) → {availability_times}")
+                else:
+                    print(f"   • {person['name']} ({person['contact']})")
             if len(staff) < roles_needed.get(role, 0):
                 print("   ⚠️  UNDERSTAFFED")
 
+# Generate availability data
+def generate_availability():
+    availability = {}
+    start_date = datetime.now().date()
+    end_date = start_date + timedelta(days=7)
+    current_date = start_date
+    while current_date <= end_date:
+        available_times = []
+        if random.random() < 0.8:  # 80% chance of being available
+            start_hour = random.randint(8, 17)
+            end_hour = random.randint(start_hour + 2, 20)
+            available_times.append(f"{start_hour:02d}:00-{end_hour:02d}:00")
+        availability[str(current_date)] = available_times
+        current_date += timedelta(days=1)
+    return availability
 
-# Data Visualization Module
+# MAIN MENU
+def main_menu():
+    load_workers()
+    load_schedule()
+    roles_needed = {}
 
-import matplotlib.pyplot as plt
-import pandas as pd
-from collections import Counter
-import os
+    while True:
+        print("\n" + "=" * 40)
+        print("   STAFF SCHEDULING MANAGER")
+        print("=" * 40)
+        print("1. Add Worker")
+        print("2. Update Worker")
+        print("3. Delete Worker")
+        print("4. View All Workers")
+        print("5. Check Availability")
+        print("6. Create Schedule")
+        print("7. View Schedule")
+        print("8. Data Analysis")
+        print("0. Exit")
+        choice = input("\nSelect option: ").strip()
 
+        if choice == "1":
+            add_worker()
+        elif choice == "2":
+            update_worker()
+        elif choice == "3":
+            delete_worker()
+        elif choice == "4":
+            view_workers()
+        elif choice == "5":
+            view_availability()
+        elif choice == "6":
+            create_schedule()
+        elif choice == "7":
+            view_schedule(roles_needed)
+        elif choice == "8":
+            analytics_menu()
+        elif choice == "0":
+            print("Goodbye!")
+            break
+        else:
+            print("Invalid option.")
+
+# Data Visualization Modules
 
 # Load Data for Charts
-
 def load_workers_for_analysis():
     filename = "workers.json" if os.path.exists("workers.json") else "workers.csv"
     if filename.endswith(".json"):
@@ -198,7 +275,6 @@ def load_workers_for_analysis():
             return json.load(f)
     else:
         return pd.read_csv(filename).to_dict(orient="records")
-
 
 # Chart 1 – Roles Distribution
 def plot_role_distribution():
@@ -222,10 +298,7 @@ def plot_role_distribution():
     plt.tight_layout()
     plt.show()
 
-
 # Chart 2 – Availability Heatmap next 7 dys
-
-# availability data is stored as nested dictionaries within worker profiles. Using loops and conditional checks, the system aggregates daily counts into a structure suitable for visualization. Matplotlib generates a bar-based heatmap, with accumulators tallying available workers per day for a data-driven view of short-term staffing forecasts.
 def plot_availability_heatmap():
     workers = load_workers_for_analysis()
     from datetime import datetime, timedelta
@@ -253,9 +326,7 @@ def plot_availability_heatmap():
     plt.tight_layout()
     plt.show()
 
-
 # Chart 3 – Shifts per Worker (Fairness Check)
-# schedule data is loaded from a JSON file and processed using counters to tally shifts per worker. Aggregations calculate averages, and conditional logic highlights outliers. Matplotlib renders a bar chart for easy comparison, empowering managers to make equitable adjustments based on reliable data.
 def plot_shifts_per_worker():
     schedule_file = "schedule.json"
     if not os.path.exists(schedule_file):
@@ -292,9 +363,7 @@ def plot_shifts_per_worker():
     plt.tight_layout()
     plt.show()
 
-
 # Master Analytics Menu
-
 def analytics_menu():
     while True:
         print("\n" + "=" * 40)
@@ -316,50 +385,6 @@ def analytics_menu():
             break
         else:
             print("Invalid option – try again.")
-
-
-# MAIN MENU
-def main_menu():
-    load_workers()
-    load_schedule()
-
-    while True:
-        print("\n" + "=" * 40)
-        print("   STAFF SCHEDULING MANAGER")
-        print("=" * 40)
-        print("1. Add Worker")
-        print("2. Update Worker")
-        print("3. Delete Worker")
-        print("4. View All Workers")
-        print("5. Check Availability")
-        print("6. Create Schedule")
-        print("7. View Schedule")
-        print("8. Analytics & Charts")
-        print("0. Exit")
-        choice = input("\nSelect option: ").strip()
-
-        if choice == "1":
-            add_worker()
-        elif choice == "2":
-            update_worker()
-        elif choice == "3":
-            delete_worker()
-        elif choice == "4":
-            view_workers()
-        elif choice == "5":
-            view_availability()
-        elif choice == "6":
-            create_schedule()
-        elif choice == "7":
-            view_schedule()
-        elif choice == "8":
-            analytics_menu()
-        elif choice == "0":
-            print("Goodbye!")
-            break
-        else:
-            print("Invalid option.")
-
 
 # run
 if __name__ == "__main__":
